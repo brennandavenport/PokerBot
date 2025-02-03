@@ -1,0 +1,2 @@
+class NotEnoughPlayersError(Exception):
+    pass
