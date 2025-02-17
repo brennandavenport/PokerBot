@@ -3,39 +3,42 @@ from typing import List
 from errors import NotEnoughPlayersError
 
 from deck import Deck
+from table import Table
 from player import Player
 from show_down import ShowDown
 
 class Game:
-    community_cards = []
-    pot = [0]
-    deck = None
-    players = []
-    active_players = []
-    player_blind = {}
-
     def __init__(self, players: List[Player]):
-        self.big_blind = 10
-        self.small_blind = 5
-        self.players = players
-        self.active_players = self.players[:]
-        self.deck = Deck()
-        self.deck.shuffle_deck()
+        #Min requirments to start game
         if len(players) < 2:
             raise NotEnoughPlayersError("At least 2 players are required to start the game.")
-        
-        self.player_blind["Small"] = players[0]
-        self.player_blind["Big"] = players[1]
+
+        #Init game const
+        self.community_cards = []
+        self.pot = [0]
+        self.big_blind_amount = 10
+        self.small_blind_amount = 5
+
+        #Init table
+        self.table = Table()
+        self.table.add_players(players)
+
+        #Init deck
+        self.deck = Deck()
+        self.deck.shuffle_deck()
+    
 
 
     def deal_deck(self) -> None:
-        for player in self.active_players:
-            player.set_private_cards([self.deck.deck.pop(), self.deck.deck.pop()])
+        self.table.deal_cards(self.deck)
 
-            if self.player_blind["Big"] == player:
-                player.bet(self.big_blind, self.pot)
-            if self.player_blind["Small"] == player:
-                player.bet(self.small_blind, self.pot)
+        # for player in self.active_players:
+        #     player.set_private_cards([self.deck.deck.pop(), self.deck.deck.pop()])
+
+        #     if self.player_blind["Big"] == player:
+        #         player.bet(self.big_blind, self.pot)
+        #     if self.player_blind["Small"] == player:
+        #         player.bet(self.small_blind, self.pot)
 
 
     def _trash_card(self) -> None:

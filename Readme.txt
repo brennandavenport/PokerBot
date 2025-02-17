@@ -15,3 +15,6 @@ packaging 24.2
 pip       25.0
 pluggy    1.5.0
 pytest    8.3.4
+
+Note to self:
+Proximal Policy Optimization
