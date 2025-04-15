@@ -6,3 +6,6 @@ class EndOfGameError(Exception):
 
 class AllInError(Exception):
     pass
+
+class InvaildValueError(Exception):
+    pass

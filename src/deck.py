@@ -1,7 +1,6 @@
 import random
 
 class Deck:
-    deck = []
     def __init__(self):
         self.deck = [
             '2H',

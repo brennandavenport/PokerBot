@@ -6,6 +6,7 @@ from deck import Deck
 from table import Table
 from player import Player
 from show_down import ShowDown
+from pot import Pot
 
 class Game:
     def __init__(self, players: List[Player]):
@@ -13,33 +14,59 @@ class Game:
         if len(players) < 2:
             raise NotEnoughPlayersError("At least 2 players are required to start the game.")
 
-        #Init game const
+        # Init game const
         self.community_cards = []
-        self.pot = [0]
         self.big_blind_amount = 10
-        self.small_blind_amount = 5
+        self.small_blind_amount = 5 
 
-        #Init table
+        # Init pot with player info, chips, has_folded?
+        self.pot = Pot(players)
+
+        # Init table
         self.table = Table()
         self.table.add_players(players)
 
-        #Init deck
+        # Init deck
         self.deck = Deck()
         self.deck.shuffle_deck()
-    
 
+        # Init blinds
+        self.small_blind_ptr = self.table.head
+        self.big_blind_ptr = self.table.head.next
+
+        
 
     def deal_deck(self) -> None:
+        """
+        Deals the cards to start the game
+        - Sets big blind and small blind
+        """
+        # Deal cards to players at table
         self.table.deal_cards(self.deck)
 
-        # for player in self.active_players:
-        #     player.set_private_cards([self.deck.deck.pop(), self.deck.deck.pop()])
+        # Update pot with blinds - deal with all in on blind later
+        self.small_blind_ptr.data.bet(self.small_blind_amount, self.pot)
+        self.big_blind_ptr.data.bet(self.big_blind_amount, self.pot)
 
-        #     if self.player_blind["Big"] == player:
-        #         player.bet(self.big_blind, self.pot)
-        #     if self.player_blind["Small"] == player:
-        #         player.bet(self.small_blind, self.pot)
+        
+    def betting_round(self) -> None:
+        # Find player after big blind assume he exists
+        start_player_ptr = self.big_blind_ptr.next
 
+        # Check for self reference
+        if start_player_ptr == self.big_blind_ptr:
+            raise Exception("Player after big blind equals big blind?")
+        
+        # Start_player_ptr is now the player whos turn it is to start the betting
+        
+        for player in self.table.__iter__(start_player_ptr):
+            player.turn(self.community_cards, self.pot)
+        
+        
+           
+
+    def preflop(self) -> None:
+        self.betting_round()
 
     def _trash_card(self) -> None:
         self.deck.deck.pop()
@@ -48,25 +75,31 @@ class Game:
         self._trash_card()
         for _ in range(3):
             self.community_cards.append(self.deck.deck.pop())
+        self.betting_round()
     
     def turn(self) -> None:
         self._trash_card()
         self.community_cards.append(self.deck.deck.pop())
+        self.betting_round()
     
     def river(self) -> None:
         self._trash_card()
         self.community_cards.append(self.deck.deck.pop())
+        self.betting_round()
     
+    # To-do refactor
     def show_down(self):
         show_down = ShowDown(self.community_cards)
 
+        
+
         player_score = {}
-        for player in self.active_players:
+        for player in self.table:
             score = show_down.evaluate_hand(player.get_private_cards())
             player_score[player] = score
         
-        max_score = 0
-        max_player = None
+        max_score, max_player = 0, None
+    
         for player in player_score:
             if max_score < player_score[player]:
                 max_score = player_score[player]
@@ -84,13 +117,12 @@ class Game:
                 self.active_players.remove(player)
     
 
+    # To-do refactor
     def reset_game(self) -> None:
-        if len(self.active_players) == 1:
-            raise Exception(f"Game over! Player {self.active_players[0].name} won!")
-
+        # if len(self.active_players) == 1:
+        #     raise Exception(f"Game over! Player {self.active_players[0].name} won!")
+        
         self.deck = Deck()
-        self.deck.shuffle_deck()
-        self.deck.shuffle_deck()
         self.deck.shuffle_deck()
 
         player0 = self.player_blind["Small"]  # Previous Small Blind
@@ -118,7 +150,6 @@ class Game:
         # Step 3: Reset pot and community cards
         self.pot = [0]  # Store pot in a list for pass-by-reference behavior
         self.community_cards = []
-
 
 
     def print_community_cards(self) -> None:
